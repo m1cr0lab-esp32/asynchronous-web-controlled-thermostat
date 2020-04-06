@@ -1,0 +1,230 @@
+/**
+ * ----------------------------------------------------------------------------
+ * ESP32 Web Controlled Thermostat
+ * ----------------------------------------------------------------------------
+ * Author: Stéphane Calderoni
+ * Date:   April 2020
+ * ----------------------------------------------------------------------------
+ * This project is a response to a request made on the RNT Lab forum:
+ * https://rntlab.com/question/java-script-code-to-refresh-home-page-only-once/
+ * ----------------------------------------------------------------------------
+ *
+ * This is a SCSS file (Sassy CSS), which is an extension of the syntax of CSS.
+ *
+ * Sass is a CSS pre-processor with syntax advancements. Style sheets in the
+ * advanced syntax are processed by the program `sass`, and turned into
+ * regular CSS style sheets.
+ *
+ * To compile this file, use the `sass` program as follows:
+ *
+ * sass -t compressed --sourcemap=none index.scss --update
+ *
+ * This will generate the `index.css  file to be stored in the `/data` folder.
+ * ----------------------------------------------------------------------------
+ */
+
+// Roboto Google Font
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+
+/*
+ * DSEG7 Modern Mini Regular font
+ * Created by Keshikan
+ * https://www.keshikan.net/fonts-e.html
+ * https://github.com/keshikan/DSEG
+ */
+@font-face {
+    font-family: 'DSEG7 Modern Mini';
+    src: url('D7MR.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    font-family: Roboto, sans-serif;
+    font-size: 11pt;
+    overflow: hidden;
+    background-color: hsl(200, 10%, 10%);
+}
+
+body {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    align-items: center;
+    justify-items: center;
+}
+
+h1 {
+    font-size: 1.5em;
+    font-weight: 500;
+    text-align: center;
+}
+
+label {
+    text-align: center;
+}
+
+input {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 1.5em;
+    padding: 1.05em 0 .95em 0;
+    font-family: 'DSEG7 Modern Mini', monospace;
+    font-size: 1.2rem;
+    text-shadow: 0 1px 2px #000;
+    border-radius: 8px;
+    border: 0;
+    -webkit-box-shadow: inset 0 2px 4px #000, 0 1px 1px rgba(#fff, .3);
+       -moz-box-shadow: inset 0 2px 4px #000, 0 1px 1px rgba(#fff, .3);
+            box-shadow: inset 0 2px 4px #000, 0 1px 1px rgba(#fff, .3);
+    outline: none;
+    text-align: center;
+
+    &#time {
+        color: hsl(180, 100%, 40%);
+        background-color: hsl(200, 20%, 10%);
+    }
+    
+    &#lower {
+        color: #0af;
+        background-color: hsl(210, 40%, 20%);
+    }
+
+    &#upper {
+        color: hsl(5, 100%, 60%);
+        background-color: hsl(0, 10%, 20%);
+    }
+}
+
+button {
+    padding: .5em 1em;
+    font-family: Robot, sans-serif;
+    font-size: 1.25rem;
+    font-weight: 300;
+    text-shadow: -1px -1px 0 #000;
+    border: 1px solid #000;
+    border-radius: 8px;
+    color: hsl(200, 10%, 50%);
+    background: linear-gradient(#111, #222);
+    box-shadow: inset 0 1px 1px rgba(#fff, .3), 0 4px 8px rgba(#000, .5);
+    outline: none;
+    
+    &:active {
+        color: hsl(200, 10%, 60%);
+        transform: translateY(4px);
+    }
+}
+
+#panel {
+    display: grid;
+    grid-gap: 2em;
+    justify-items: center;
+    padding: 1rem 0 2rem 0;
+    background-color: #eee;
+    background-color: hsl(200, 20%, 20%);
+    border-radius: 1rem;
+    box-shadow: 0 8px 16px rgba(#000, .4), inset 0 2px 4px rgba(hsl(200, 50%, 75%), .25);
+    opacity: 0;
+
+    &.showing {
+        -webkit-animation: fadein 2s; /* Safari, Chrome and Opera > 12.1 */
+           -moz-animation: fadein 2s; /* Firefox < 16 */
+            -ms-animation: fadein 2s; /* Internet Explorer */
+             -o-animation: fadein 2s; /* Opera < 12.1 */
+                animation: fadein 2s;
+    }
+}
+
+@keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Firefox < 16 */
+@-moz-keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Safari, Chrome and Opera > 12.1 */
+@-webkit-keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Internet Explorer */
+@-ms-keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Opera < 12.1 */
+@-o-keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+#screen {
+    width: 65%;
+    padding: .28em 0 .22em 0;
+    font-family: 'DSEG7 Modern Mini', monospace;
+    font-size: 2.75rem;
+    text-align: center;
+    text-shadow: 0 1px 2px #000;
+    color: #2f2;
+    background-color: #050;
+    border-radius: 8px;
+    box-shadow: inset 0 4px 8px #000, 0 1px 1px rgba(#fff, .3);
+    
+    &.error {
+        color: hsl(40, 100%, 50%);
+        background-color: hsl(40, 100%, 20%);
+    }
+    
+    &.cold {
+        color: hsl(200, 100%, 60%);
+        background-color: hsl(210, 100%, 20%);
+    }
+    
+    &.hot {
+        color: hsl(0, 70%, 50%);
+        background-color: #400;
+    }
+
+    sup { font-size: .5em; }
+}
+
+@media (max-width: 420px) {
+    html, body { font-size: 9pt;  }
+    #panel     { width:     80%;  }
+    #screen    { font-size: 2rem; }
+}
+
+.parameters {
+    display:grid;
+    grid-gap: 1em;
+    width: 50%;
+}
+
+.display {
+    display: grid;
+    grid-gap: .25rem;
+}
+
+.buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 1em;
+}
+
+.inset {
+    color: hsl(200, 20%, 50%);
+    text-shadow: -1px -1px 0 #000;
+}

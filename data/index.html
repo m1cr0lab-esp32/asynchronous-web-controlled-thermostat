@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta charset="utf-8">
+    <title>ESP32 Web Controlled Thermostat</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div id="panel">
+        <h1 class="inset">ESP32 Thermostat</h1>
+        <div id="screen"><span id="temperature">%TEMP%</span><span id="unit"><sup>°</sup>C</span></div>
+        <div class="parameters">
+            <div class="display">
+                <label class="inset" for="time">Time</label>
+                <input type="text" id="time" readonly>
+            </div>
+            <div class="display">
+                <label class="inset" for="lower">Min</label>
+                <input type="text" id="lower" data-min="%MIN_TEMP%" value="%LOWER_TEMP%" onkeypress="return digitOnly(event);" onblur="validate();">
+            </div>
+            <div class="display">
+                <label class="inset" for="upper">Max</label>
+                <input type="text" id="upper" data-max="%MAX_TEMP%" value="%UPPER_TEMP%" onkeypress="return digitOnly(event);" onblur="validate();">
+            </div>
+        </div>
+        <div class="buttons">
+            <button id="default">Default</button>
+            <button id="reboot">Reboot</button>
+        </div>
+    </div>
+    <script src="index.js"></script>
+</body>
+</html>
