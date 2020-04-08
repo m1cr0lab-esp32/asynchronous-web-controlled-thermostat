@@ -23,6 +23,8 @@
  * ----------------------------------------------------------------------------
  */
 
+$responsiveThresholdWidth: 390px;
+
 // Roboto Google Font
 @import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
 
@@ -126,6 +128,7 @@ button {
     display: grid;
     grid-gap: 2em;
     justify-items: center;
+    min-width: $responsiveThresholdWidth;
     padding: 1rem 0 2rem 0;
     background-color: #eee;
     background-color: hsl(200, 20%, 20%);
@@ -201,7 +204,7 @@ button {
     sup { font-size: .5em; }
 }
 
-@media (max-width: 420px) {
+@media (max-width: $responsiveThresholdWidth) {
     html, body { font-size: 9pt;  }
     #panel     { width:     80%;  }
     #screen    { font-size: 2rem; }
