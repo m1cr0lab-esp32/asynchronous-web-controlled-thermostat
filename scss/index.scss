@@ -206,8 +206,10 @@ button {
 
 @media (max-width: $responsiveThresholdWidth) {
     html, body { font-size: 9pt;  }
-    #panel     { width:     80%;  }
     #screen    { font-size: 2rem; }
+    #panel {
+        width: 80%;
+    }
 }
 
 .parameters {
