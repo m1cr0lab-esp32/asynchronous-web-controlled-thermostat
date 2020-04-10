@@ -1,6 +1,6 @@
 # ESP32 Asynchronous Web Controlled Thermostat
 
-This project came out of a [discussion][discussion] I had with Yves Bourdon, on the Random Nerd Tutorial Lab forum, on how to implement an updated web interface to control an ESP32, without the need to reload the entire page. In other words, the idea here is to perform asynchronous requests from the client browser to query the microcontroller on the status of the data to be displayed, and then to perform local updates of the user interface as soon as the data provided by the ESP32 is received.
+This project came out of [a discussion I had with Yves Bourdon][discussion], on the Random Nerd Tutorial Lab forum, on how to implement an updated web interface to control an ESP32, without needing to reload the whole page or submit a form. In other words, the idea here is to perform asynchronous requests from the client browser to query the microcontroller on the status of the data to be displayed, and then to perform local updates of the user interface as soon as the data provided by the ESP32 is received.
 
 There are several techniques to achieve this, including the use of WebSockets, which I much prefer to traditional methods that rely on AJAX. Nevertheless, Yves wanted to understand how to implement this technique with AJAX. This is the purpose of this project. Another one will follow to illustrate how to proceed with WebSockets...
 
@@ -18,7 +18,7 @@ To answer Yves' initial request for a connected thermostat, I chose to set up a 
 </tbody>
 </table>
 
-The user has the ability to set the temperature range of the thermostat, and save it to the ESP32 EEPROM from the web interface. This way, if the ESP32 should restart for any reason, the thermostat can be immediately restarted with the last saved values. To test this feature, I have added a button to reboot the ESP32 on command.
+The web interface allows the user to adjust the temperature range of the thermostat. As soon as one of the thresholds is changed, an asynchronous HTTP request is sent to the ESP32 to store the new temperature range in its EEPROM memory. This way, if the ESP32 were to restart for any reason (after a power failure for example), the thermostat would be initialized with the last recorded temperature range. A `Reboot` button allows this feature to be tested by restarting the ESP32 on command.
 
 Each time the current temperature reading is taken, the interface is updated in a totally transparent way, without the need to reload the page. And the temperature display automatically adapts to the situation by changing colour to indicate if everything is fine or if you're out of the permitted range. A reading error on the sensor can also occur. The display will take this into account:
 
@@ -41,7 +41,7 @@ If you are not familiar with the use of SPIFFS, I encourage you to also read thi
 - 1 ESP32
 - 1 DHT11 temperature sensor
 - 1 LED
-- 2 resistors (220 Ω and 10 kΩ)
+- 2 resistors (220 Ω and 4.7 kΩ)
 
 
 ## Wiring Diagram and Pinouts
@@ -52,8 +52,8 @@ If you are not familiar with the use of SPIFFS, I encourage you to also read thi
 
 - **GPIO23** is connected to the anode of the LED
 - The cathode of the LED is connected to the ground through a 220 Ω resistor
-- **GPIO32** is connected to the data line of the DHT11 temperature sensor
-- DHT11 is pull-up on its data line with a 10 kΩ resistor
+- **GPIO32** is connected to the data pin of the DHT11 temperature sensor
+- DHT11 is pull-up on its data pin with a 4.7 kΩ resistor
 
 
 ## The Code

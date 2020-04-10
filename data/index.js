@@ -129,15 +129,38 @@ function initThresholds() {
 // Once the entry is complete
 // --------------------------
 
-function validate() {
-    let low = Number.parseInt(lower.value);
-    let upp = Number.parseInt(upper.value);
-    let min = Number.parseInt(lower.dataset.min);
-    let max = Number.parseInt(upper.dataset.max);
-    lower.value = Math.max(Math.min(low, upp), min);
-    upper.value = Math.min(Math.max(low, upp), max);
-    // color may change...
+/**
+ * Here we must make sure that the temperature thresholds have been entered correctly:
+ * the user may have inverted the min and max when entering them, in which case they
+ * must be put back in the right order.
+ * 
+ * Once this check has been made, the display screen of the current temperature is
+ * refreshed to take into account the new thresholds, and change the display colour
+ * if necessary.
+ * 
+ * Finally, the new thresholds are transmitted to the ESP32 to be saved in the EEPROM.
+ */
+
+function saveThresholds() {
+    let low     = Number.parseFloat(lower.value);
+    let upp     = Number.parseFloat(upper.value);
+    let new_low = Math.min(low, upp);
+    let new_upp = Math.max(low, upp);
+
+    // in case the thresholds have been reversed,
+    // or if the user has entered too many decimal places
+    lower.value = new_low.toFixed(1);
+    upper.value = new_upp.toFixed(1);
+
+    // then temperature display color may change...
     setTemperature(temperature.innerText);
+
+    // finally, the new thresholds are sent to the ESP32 for storage in the EEPROM:
+    // asynchronous call of the remote routine with the classical method
+    xhrRequest(`/savethresholds?lower=${new_low}&upper=${new_upp}`);
+
+    // for a more modern method, you can instead call this manager:
+    // asyncAwaitRequest(`/savethresholds?lower=${new_low}&upper=${new_upp}`);
 }
 
 // While the user is entering a value
@@ -145,10 +168,10 @@ function validate() {
 
 function digitOnly(event) {
     if (event.keyCode == 13) {
-        validate();
+        saveThresholds();
         return false;
     }
-    return /[\d-]/.test(event.key);
+    return /[\d-\.]/.test(event.key);
 }
 
 // ----------------------------------------------------------------------------
@@ -162,25 +185,28 @@ function initButtons() {
     btnReboot.addEventListener('click', onReboot);
 }
 
-// Event manager for sending temperature thresholds
-// ------------------------------------------------
+// Factory reset event manager
+// ---------------------------
 
 function onDefault(event) {
-    let low = Number.parseInt(lower.value);
-    let upp = Number.parseInt(upper.value);
-
     // asynchronous call of the remote routine with the classical method
-    xhrRequest(`/setdefaults?lower=${low}&upper=${upp}`);
+    xhrRequest('/reset');
 
     // for a more modern method, you can instead call this manager:
-    // asyncAwaitRequest(`/setdefaults?lower=${low}&upper=${upp}`);
+    // asyncAwaitRequest('/reset');
+
+    // refreshes all temperature displays
+    lower.value = Number.parseFloat(lower.dataset.min).toFixed(1);
+    upper.value = Number.parseFloat(upper.dataset.max).toFixed(1);
+    setTemperature(temperature.innerText);
 }
 
 // Event manager for restarting ESP32
 // ----------------------------------
 
 function onReboot(event) {
-    xhrRequest('/boot');
+    // sends reboot command to the ESP32
+    xhrRequest('/reboot');
 }
 
 // ----------------------------------------------------------------------------
@@ -197,7 +223,7 @@ function initProbe() {
 
 function getTemperature() {
     /**
-     * A `setTemperature()` callback function is designated in the following
+     * a `setTemperature()` callback function is designated in the following
      * to update the temperature display when the ESP32 has transmitted the response.
      */
 
@@ -219,8 +245,8 @@ function setTemperature(temp) {
         screen.className = 'error';
     } else {
 
-        let low = Number.parseInt(lower.value);
-        let upp = Number.parseInt(upper.value);
+        let low = Number.parseFloat(lower.value);
+        let upp = Number.parseFloat(upper.value);
         let t   = Number.parseFloat(temp).toFixed(1);
 
         if (t < low) {

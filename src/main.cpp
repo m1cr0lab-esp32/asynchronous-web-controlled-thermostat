@@ -59,16 +59,16 @@
  */
 
 constexpr uint8_t INIT_FLAG = 42; // 😉 "The Hitchhiker's Guide to the Galaxy" (Douglas Adams)
-constexpr int8_t  MIN_TEMP  = 10; // ideal temperatures
-constexpr int8_t  MAX_TEMP  = 14; // for a wine cellar
+constexpr float_t MIN_TEMP  = 10; // ideal temperatures
+constexpr float_t MAX_TEMP  = 14; // for a wine cellar
 
 // Definition of the 3 memory slots to be reserved in the EEPROM
 // -------------------------------------------------------------
 
-constexpr uint8_t EEPROM_SIZE    = 3;
+constexpr uint8_t EEPROM_SIZE    = sizeof(uint8_t) + (2 * sizeof(float_t));
 constexpr uint8_t ADDR_INIT_FLAG = 0;
-constexpr uint8_t ADDR_MIN_TEMP  = 1;
-constexpr uint8_t ADDR_MAX_TEMP  = 2;
+constexpr uint8_t ADDR_MIN_TEMP  = sizeof(uint8_t);
+constexpr uint8_t ADDR_MAX_TEMP  = sizeof(uint8_t) + sizeof(float_t);
 
 // WiFi credentials
 // ----------------
@@ -107,9 +107,9 @@ constexpr char CLOSING[] = "\n-------------------------------\n";
 // ---------------------------------------------
 
 struct TempRange {
-    bool   initialized;
-    int8_t lower;
-    int8_t upper;
+    bool    initialized;
+    float_t lower;
+    float_t upper;
 };
 
 TempRange tempRange;
@@ -157,10 +157,11 @@ void initEEPROM() {
     Serial.print(F("2. Initializing EEPROM... "));
     if (EEPROM.begin(EEPROM_SIZE)) {
         // display of the values currently stored in the EEPROM
-        Serial.print("done\n   -> [ ");
-        for (uint8_t i=0; i<EEPROM_SIZE; i++) {
-            Serial.printf("0x%02x => %i%s", i, (int8_t)EEPROM.readChar(i), i < EEPROM_SIZE - 1 ? " | " : " ]\n");
-        }
+        Serial.print(F("done\n   -> [ "));
+        uint8_t e1 = EEPROM.readByte(ADDR_INIT_FLAG);
+        float_t e2 = EEPROM.readFloat(ADDR_MIN_TEMP);
+        float_t e3 = EEPROM.readFloat(ADDR_MAX_TEMP);
+        Serial.printf("0x%02x => %u | 0x%02x => %.1f | 0x%02x => %.1f ]\n", ADDR_INIT_FLAG, e1, ADDR_MIN_TEMP, e2, ADDR_MAX_TEMP, e3);
     } else {
         Serial.println("error!");
     }
@@ -168,16 +169,16 @@ void initEEPROM() {
 
 void initTempRange() {
     // the temperature range stored in the EEPROM is read out
-    int8_t minTemp = EEPROM.readChar(ADDR_MIN_TEMP);
-    int8_t maxTemp = EEPROM.readChar(ADDR_MAX_TEMP);
+    float_t minTemp = EEPROM.readFloat(ADDR_MIN_TEMP);
+    float_t maxTemp = EEPROM.readFloat(ADDR_MAX_TEMP);
     // whether these values are to be taken into account
     // (only if they have already been stored in the EEPROM at least once)
     tempRange.initialized = EEPROM.readByte(ADDR_INIT_FLAG) == INIT_FLAG;
     // the temperature range to be taken over by the thermostat is deduced from this:
-    tempRange.lower = tempRange.initialized ? max(minTemp, MIN_TEMP) : MIN_TEMP;
-    tempRange.upper = tempRange.initialized ? min(maxTemp, MAX_TEMP) : MAX_TEMP;
+    tempRange.lower = tempRange.initialized ? minTemp : MIN_TEMP;
+    tempRange.upper = tempRange.initialized ? maxTemp : MAX_TEMP;
     Serial.print(F("3. Temperature range set to "));
-    Serial.printf("[ %i°C , %i°C ]\n", tempRange.lower, tempRange.upper);
+    Serial.printf("[ %.1f°C , %.1f°C ]\n", tempRange.lower, tempRange.upper);
 }
 
 // DHT11 temperature sensor initialization
@@ -241,7 +242,7 @@ void initWiFi() {
  * later determine when the LED should turn off.
  */
 
-float readTemperature() {
+float_t readTemperature() {
     startRead = millis();
     readingTemperature = true;
     return dht.readTemperature();
@@ -270,7 +271,7 @@ void highTemperatureTrigger () {
     // trigger whatever you want here...
 }
 
-void checkForTriggers(float temp) {
+void checkForTriggers(float_t temp) {
     if (temp < tempRange.lower) {
         lowTemperatureTrigger();
     } else if (temp > tempRange.upper) {
@@ -287,7 +288,7 @@ void checkForTriggers(float temp) {
  * write to the EEPROM if this is not necessary.
  */
 
-void saveTempRangeToEEPROM(int8_t lower, int8_t upper) {
+void saveTempRangeToEEPROM(float_t lower, float_t upper) {
     bool hasToBeSaved = false;
 
     // Remember that `tempRange` contains the values that were
@@ -295,13 +296,13 @@ void saveTempRangeToEEPROM(int8_t lower, int8_t upper) {
 
     if (lower != tempRange.lower) {
         tempRange.lower = lower;
-        EEPROM.writeChar(ADDR_MIN_TEMP, lower);
+        EEPROM.writeFloat(ADDR_MIN_TEMP, lower);
         hasToBeSaved = true;
     }
 
     if (upper != tempRange.upper) {
         tempRange.upper = upper;
-        EEPROM.writeChar(ADDR_MAX_TEMP, upper);
+        EEPROM.writeFloat(ADDR_MAX_TEMP, upper);
         hasToBeSaved = true;
     }
 
@@ -336,8 +337,8 @@ void saveTempRangeToEEPROM(int8_t lower, int8_t upper) {
  * 
  * There are 4 of these markers:
  * - %TEMP%       (the current temperature read by the sensor)
- * - %MIN_TEMP%   (the minimum value of the temperature range that can be set by the operator)
- * - %MAX_TEMP%   (the maximum value of the temperature range that can be set by the operator)
+ * - %MIN_TEMP%   (factory setting of the minimum temperature)
+ * - %MAX_TEMP%   (Factory setting of the maximum temperature)
  * - %LOWER_TEMP% (the lower limit of the temperature range set by the operator)
  * - %UPPER_TEMP% (the upper limit of the temperature range set by the operator)
  */
@@ -345,16 +346,16 @@ void saveTempRangeToEEPROM(int8_t lower, int8_t upper) {
 String processor(const String &var)
 {
     if (var == "TEMP") {
-        float t = readTemperature();
-        return isnan(t) ? String("Error") : String(t);
+        float_t t = readTemperature();
+        return isnan(t) ? String("Error") : String(t, 1);
     } else if (var == "MIN_TEMP") {
-        return String(MIN_TEMP);
+        return String(MIN_TEMP, 1);
     } else if (var == "MAX_TEMP") {
-        return String(MAX_TEMP);
+        return String(MAX_TEMP, 1);
     } else if (var == "LOWER_TEMP") {
-        return String(tempRange.lower);
+        return String(tempRange.lower, 1);
     } else if (var == "UPPER_TEMP") {
-        return String(tempRange.upper);
+        return String(tempRange.upper, 1);
     }
 
     return String();
@@ -385,7 +386,7 @@ void onNotFound(AsyncWebServerRequest *request) {
 
 void onTemp(AsyncWebServerRequest *request) {
     Serial.println(F("Received temperature request\n-> Performs a sensor reading"));
-    float temp = readTemperature();
+    float_t temp = readTemperature();
     
     if (isnan(temp)) {
         Serial.println(F("** Failed to read from DHT sensor!\n"));
@@ -399,10 +400,35 @@ void onTemp(AsyncWebServerRequest *request) {
     }
 }
 
+// Factory reset
+// -------------
+
+void onReset(AsyncWebServerRequest *request) {
+    // No point in writing in the EEPROM if it's never been done before...
+    if (tempRange.initialized) {
+        EEPROM.writeByte(ADDR_INIT_FLAG, 0xff);
+        EEPROM.commit();
+    }
+
+    tempRange.initialized = false;
+    tempRange.lower       = MIN_TEMP;
+    tempRange.upper       = MAX_TEMP;
+
+    Serial.println(F("\nFactory reset\n"));
+    Serial.print(F("-> Temperature range is set to "));
+    Serial.printf("[ %.1f°C , %.1f°C ]\n\n", tempRange.lower, tempRange.upper);
+
+    // Requests are asynchronous and must always be resolved:
+    request->send(200);
+}
+
 // ESP32 restart request manager
 // -----------------------------
 
 void onReboot(AsyncWebServerRequest *request) {
+    // Requests are asynchronous and must always be resolved:
+    request->send(200);
+
     Serial.println(CLOSING);
     Serial.println(F("Rebooting...\n"));
     Serial.flush();
@@ -412,11 +438,11 @@ void onReboot(AsyncWebServerRequest *request) {
 // Manager for queries to define the temperature range set by the operator
 // -----------------------------------------------------------------------
 
-void onSetDefaults(AsyncWebServerRequest *request) {
+void onSaveThresholds(AsyncWebServerRequest *request) {
     if (request->hasParam("lower") && request->hasParam("upper")) {
-        int8_t lower = request->getParam("lower")->value().toInt();
-        int8_t upper = request->getParam("upper")->value().toInt();
-        Serial.printf("Temperature range received: [ %i°C , %i°C ]\n", lower, upper);
+        float_t lower = request->getParam("lower")->value().toFloat();
+        float_t upper = request->getParam("upper")->value().toFloat();
+        Serial.printf("Temperature range received: [ %.1f°C , %.1f°C ]\n", lower, upper);
         saveTempRangeToEEPROM(lower, upper);
     }
 
@@ -459,9 +485,10 @@ void initWebServer() {
 
     // Routes that correspond to dynamic processing by the microcontroller:
 
-    server.on("/temp",        onTemp);
-    server.on("/boot",        onReboot);
-    server.on("/setdefaults", onSetDefaults);
+    server.on("/temp",           onTemp);
+    server.on("/reset",          onReset);
+    server.on("/reboot",         onReboot);
+    server.on("/savethresholds", onSaveThresholds);
 
     // Server initialization
 

@@ -19,11 +19,11 @@
             </div>
             <div class="display">
                 <label class="inset" for="lower">Min</label>
-                <input type="text" id="lower" data-min="%MIN_TEMP%" value="%LOWER_TEMP%" onkeypress="return digitOnly(event);" onblur="validate();">
+                <input type="text" id="lower" data-min="%MIN_TEMP%" value="%LOWER_TEMP%" onkeypress="return digitOnly(event);" onblur="saveThresholds();">
             </div>
             <div class="display">
                 <label class="inset" for="upper">Max</label>
-                <input type="text" id="upper" data-max="%MAX_TEMP%" value="%UPPER_TEMP%" onkeypress="return digitOnly(event);" onblur="validate();">
+                <input type="text" id="upper" data-max="%MAX_TEMP%" value="%UPPER_TEMP%" onkeypress="return digitOnly(event);" onblur="saveThresholds();">
             </div>
         </div>
         <div class="buttons">
